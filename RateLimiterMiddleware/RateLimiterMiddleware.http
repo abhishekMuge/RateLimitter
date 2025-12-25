@@ -1,0 +1,17 @@
+@RateLimiterMiddleware_HostAddress = http://localhost:5173
+
+
+POST http://localhost:5173/api/api/data
+Content-Type: application/json
+{
+  "validationPacket": {
+    "userId": "user-123",
+    "apiKey": "test-key"
+  },
+  "requestPacket": {
+    "payload": "hello from client",
+    "endpoint": "/api/api/data",
+    "timestamp": "2025-12-25T13:00:00Z"
+  }
+} 
+###
