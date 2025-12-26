@@ -1,0 +1,48 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/RateLimiterMiddleware.sln",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary;ForceNoAlign"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "publish",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "publish",
+                "${workspaceFolder}/RateLimiterMiddleware.sln",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary;ForceNoAlign"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "watch",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "watch",
+                "run",
+                "--project",
+                "${workspaceFolder}/RateLimiterMiddleware.sln"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "type": "dotnet",
+            "task": "watch RateLimiterMiddleware",
+            "file": "/workspaces/RateLimitter/RateLimiterMiddleware/RateLimiterMiddleware.csproj",
+            "problemMatcher": [],
+            "label": "dotnet: watch RateLimiterMiddleware"
+        }
+    ]
+}
