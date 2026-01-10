@@ -68,3 +68,6 @@ G:/dotnet/Project/RateLimiter/RateLimiterMiddleware/obj/Debug/net8.0/ref/RateLim
 /workspaces/RateLimitter/RateLimiterMiddleware/obj/Debug/net8.0/RateLimiterMiddleware.pdb
 /workspaces/RateLimitter/RateLimiterMiddleware/obj/Debug/net8.0/RateLimiterMiddleware.genruntimeconfig.cache
 /workspaces/RateLimitter/RateLimiterMiddleware/obj/Debug/net8.0/ref/RateLimiterMiddleware.dll
+/workspaces/RateLimitter/RateLimiterMiddleware/bin/Debug/net8.0/Pipelines.Sockets.Unofficial.dll
+/workspaces/RateLimitter/RateLimiterMiddleware/bin/Debug/net8.0/StackExchange.Redis.dll
+/workspaces/RateLimitter/RateLimiterMiddleware/bin/Debug/net8.0/System.IO.Hashing.dll

@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api")]
 public class ApiController : ControllerBase
 {
     [HttpPost("data")]

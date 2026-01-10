@@ -43,6 +43,13 @@
             "file": "/workspaces/RateLimitter/RateLimiterMiddleware/RateLimiterMiddleware.csproj",
             "problemMatcher": [],
             "label": "dotnet: watch RateLimiterMiddleware"
+        },
+        {
+            "type": "dotnet",
+            "task": "watch RateLimiterMiddleware",
+            "file": "/workspaces/RateLimitter/RateLimiterMiddleware/RateLimiterMiddleware.csproj",
+            "problemMatcher": [],
+            "label": "dotnet: watch RateLimiterMiddleware"
         }
     ]
 }

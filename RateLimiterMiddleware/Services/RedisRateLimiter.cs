@@ -12,7 +12,7 @@ public class RedisRateLimiter : IRateLimiterService
     public RedisRateLimiter(IConnectionMultiplexer redis)
     {
         _db = redis.GetDatabase();
-        _luaScript = File.ReadAllText("Scripts/rate_limiter.lua");
+        _luaScript = File.ReadAllText("Scripts/Fixed_Window_Limiter.lua");
         LoadScript();
     }
 
@@ -31,15 +31,14 @@ public class RedisRateLimiter : IRateLimiterService
         int maxRequests,
         int windowSeconds)
     {
-        var key = $"rate_limit:{userId}:{endpoint}";
-        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var cacheKey = $"rate_limit:{userId}:{endpoint}";
 
         try
         {
-            var evalParams = new {
-                keys = new RedisKey[] { (RedisKey)key },
-                argv = new RedisValue[] { maxRequests, windowSeconds, timestamp }
-            };
+            // var evalParams = new {
+            //     keys = new RedisKey[] { (RedisKey)key },
+            //     argv = new RedisValue[] { maxRequests, windowSeconds }
+            // };
             // var result = (int)await _loadedScript.EvaluateAsync(
             //     _db,
             //     new RedisKey[] { key },
@@ -49,8 +48,18 @@ public class RedisRateLimiter : IRateLimiterService
             //         windowSeconds,
             //         timestamp
             //     });
-            var redisResult = await _loadedScript.EvaluateAsync(_db, evalParams);
-            int result = (int)(long)redisResult;
+
+            var result = (int)await _loadedScript.EvaluateAsync(
+                _db,
+                new
+                {
+                    key = cacheKey,
+                    limit = maxRequests,
+                    window = windowSeconds
+                }
+            );
+            // var redisResult = await _loadedScript.EvaluateAsync(_db, evalParams);
+            // int result = (int)(long)redisResult;
 
             return result == 1;
         }

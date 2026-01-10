@@ -1,100 +1,95 @@
 
 using System.Text.Json;
 using System.Text;
+
 public sealed class RateLimitingMiddleware
 {
     private readonly RequestDelegate _next;
-    private readonly IRateLimitIdentityResolver _identityResolver;
-    private readonly IRateLimitPolicyResolver _policyResolver;
-    private readonly ITokenBucketStore _bucketStore;
-
+    private readonly IRateLimiterService _rateLimiterService;
     public RateLimitingMiddleware(
         RequestDelegate next,
-        IRateLimitIdentityResolver identityResolver,
-        IRateLimitPolicyResolver policyResolver,
-        ITokenBucketStore bucketStore)
+        IRateLimiterService rateLimiterService)
     {
         _next = next;
-        _identityResolver = identityResolver;
-        _policyResolver = policyResolver;
-        _bucketStore = bucketStore;
+        _rateLimiterService = rateLimiterService;
     }
 
     public async Task InvokeAsync(HttpContext context)
     {
         context.Request.EnableBuffering();
 
-        using var reader = new StreamReader(
+        // Only intercept JSON requests
+        if (!context.Request.ContentType?.Contains("application/json") ?? true)
+        {
+            await _next(context);
+            return;
+        }
+
+        context.Request.Body.Position = 0;
+        var reader = new StreamReader(
             context.Request.Body,
             Encoding.UTF8,
-            detectEncodingFromByteOrderMarks: false,
-            leaveOpen: true);
-
-        var body = await reader.ReadToEndAsync();
+            leaveOpen: true
+        );
+        var body = await reader.ReadToEndAsync();   
         context.Request.Body.Position = 0;
 
         if (string.IsNullOrWhiteSpace(body))
         {
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            await context.Response.WriteAsync("Empty request body.");
+            await context.Response.WriteAsync("Empty request body");
             return;
         }
 
         RequestPacket packet;
         try
         {
-            packet = JsonSerializer.Deserialize<RequestPacket>(
-                body,
-                new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                })!;
+            packet = JsonSerializer.Deserialize<RequestPacket>(body);
         }
-        catch
+        catch (JsonException)
         {
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            await context.Response.WriteAsync("Invalid request packet.");
+            await context.Response.WriteAsync("Invalid JSON format");
             return;
         }
 
-        // 1. Resolve identity
-        string identityKey;
+        var userId = packet?.ValidatePacket.UserId;
+        var endpoint = packet?.ForwardPacket.EndPoint;
+
+        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(endpoint))
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            await context.Response.WriteAsync("Missing rate limit identifiers");
+            return;
+        }
+
+        var allowed = await _rateLimiterService.IsRequestAllowedAsync(
+            userId,
+            endpoint,
+            maxRequests: 5,
+            windowSeconds: 60
+        );
+
+        if(!allowed)
+        {
+            context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+            await context.Response.WriteAsync("Rate limit exceeded");
+            return;
+        }
         try
         {
-            identityKey =
-                _identityResolver.ResolveIdentity(packet.ValidatePacket);
+            // var forwardPayload = packet?.ForwardPacket.Payload ?? string.Empty;
+            // var newBody = Encoding.UTF8.GetBytes(forwardPayload);
+
+            // context.Request.Body = new MemoryStream(newBody);
+            // context.Request.ContentLength = newBody.Length;
+
+            // 5. Forward request
+            await _next(context);
         }
-        catch (Exception ex)
+        catch(Exception ex)
         {
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            await context.Response.WriteAsync(ex.Message);
-            return;
+            Console.WriteLine($"Exception Occured: {ex}");
         }
-
-        // 2. Resolve policy
-        var policy =
-            _policyResolver.Resolver(packet.ValidatePacket);
-
-        // 3. Get bucket
-        var bucket =
-            _bucketStore.GetOrCreate(
-                identityKey,
-                policy.Capacity,
-                policy.RefillRatePerSecond);
-
-        // 4. Enforce rate limit
-        if (!bucket.TryConsume())
-        {
-            context.Response.StatusCode =
-                StatusCodes.Status429TooManyRequests;
-
-            await context.Response.WriteAsync(
-                "Rate limit exceeded. Try again later.");
-
-            return;
-        }
-
-        // 5. Forward request
-        await _next(context);
     }
 }
